@@ -7,7 +7,8 @@ import { defaultWebsiteData } from '@/lib/data';
 interface AdminContextType {
   isAuthenticated: boolean;
   websiteData: WebsiteData;
-  login: (email: string, password: string) => Promise<boolean>;
+  sendOTP: (email: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+  verifyOTP: (email: string, otp: string) => Promise<boolean>;
   logout: () => void;
   updateWebsiteData: (data: WebsiteData) => Promise<void>;
   refreshData: () => Promise<void>;
@@ -80,12 +81,33 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [websiteData.siteSettings.siteTitle]);
 
-  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+  const sendOTP = useCallback(async (email: string) => {
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        return { success: true, message: data.message };
+      } else {
+        return { success: false, error: data.error || 'Failed to send OTP' };
+      }
+    } catch (error) {
+      console.error('Send OTP error:', error);
+      return { success: false, error: 'Network error. Please try again.' };
+    }
+  }, []);
+
+  const verifyOTP = useCallback(async (email: string, otp: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp }),
       });
 
       if (response.ok) {
@@ -95,7 +117,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
       return false;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Verify OTP error:', error);
       return false;
     }
   }, []);
@@ -140,7 +162,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     <AdminContext.Provider value={{
       isAuthenticated,
       websiteData,
-      login,
+      sendOTP,
+      verifyOTP,
       logout,
       updateWebsiteData,
       refreshData,

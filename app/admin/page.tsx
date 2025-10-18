@@ -34,13 +34,16 @@ import { useAdmin } from '@/contexts/AdminContext';
 import { TourPackage, Review, TeamMember, WebsiteData } from '@/types';
 
 export default function AdminPage() {
-  const { isAuthenticated, login, logout, websiteData, updateWebsiteData } = useAdmin();
-  const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+  const { isAuthenticated, sendOTP, verifyOTP, logout, websiteData, updateWebsiteData } = useAdmin();
+  const [step, setStep] = useState<'email' | 'otp'>('email');
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [pendingReviews, setPendingReviews] = useState<Review[]>([]);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [openDialogs, setOpenDialogs] = useState<{ [key: string]: boolean }>({});
+  const [otpExpiresAt, setOtpExpiresAt] = useState<Date | null>(null);
 
   // Fetch pending reviews
   const fetchPendingReviews = useCallback(async () => {
@@ -74,17 +77,49 @@ export default function AdminPage() {
     setOpenDialogs(prev => ({ ...prev, [dialogKey]: true }));
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setLoginError('');
 
-    const success = await login(loginForm.email, loginForm.password);
+    const result = await sendOTP(email);
+    if (result.success) {
+      setStep('otp');
+      setOtpExpiresAt(new Date(Date.now() + 10 * 60 * 1000));
+      showNotification('success', 'OTP sent to your email!');
+    } else {
+      setLoginError(result.error || 'Failed to send OTP');
+    }
+    setIsLoading(false);
+  };
+
+  const handleVerifyOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setLoginError('');
+
+    const success = await verifyOTP(email, otp);
     if (success) {
-      setLoginForm({ email: '', password: '' });
+      setOtp('');
+      setEmail('');
       showNotification('success', 'Successfully logged in!');
     } else {
-      setLoginError('Invalid credentials');
+      setLoginError('Invalid or expired OTP');
+    }
+    setIsLoading(false);
+  };
+
+  const handleResendOTP = async () => {
+    setIsLoading(true);
+    setLoginError('');
+    setOtp('');
+
+    const result = await sendOTP(email);
+    if (result.success) {
+      setOtpExpiresAt(new Date(Date.now() + 10 * 60 * 1000));
+      showNotification('success', 'New OTP sent to your email!');
+    } else {
+      setLoginError(result.error || 'Failed to resend OTP');
     }
     setIsLoading(false);
   };
@@ -126,41 +161,93 @@ export default function AdminPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle className="text-center">Admin Login</CardTitle>
+            {step === 'otp' && (
+              <p className="text-sm text-gray-600 dark:text-gray-400 text-center mt-2">
+                Enter the OTP sent to {email}
+              </p>
+            )}
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <Input
-                  type="email"
-                  placeholder="Email"
-                  value={loginForm.email}
-                  onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Input
-                  type="password"
-                  placeholder="Password"
-                  value={loginForm.password}
-                  onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                  required
-                />
-              </div>
-              {loginError && (
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{loginError}</AlertDescription>
-                </Alert>
-              )}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Logging in...' : 'Login'}
-              </Button>
-            </form>
+            {step === 'email' ? (
+              <form onSubmit={handleSendOTP} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Admin Email</label>
+                  <Input
+                    type="email"
+                    placeholder="Enter admin email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                {loginError && (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{loginError}</AlertDescription>
+                  </Alert>
+                )}
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? 'Sending OTP...' : 'Send OTP'}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyOTP} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Enter OTP</label>
+                  <Input
+                    type="text"
+                    placeholder="Enter 6-digit OTP"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    maxLength={6}
+                    required
+                    className="text-center text-2xl tracking-widest"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                    OTP expires in 10 minutes
+                  </p>
+                </div>
+                {loginError && (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{loginError}</AlertDescription>
+                  </Alert>
+                )}
+                <div className="space-y-2">
+                  <Button type="submit" className="w-full" disabled={isLoading || otp.length !== 6}>
+                    {isLoading ? 'Verifying...' : 'Verify OTP'}
+                  </Button>
+                  <div className="flex items-center justify-between text-sm">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setStep('email');
+                        setOtp('');
+                        setLoginError('');
+                      }}
+                      disabled={isLoading}
+                    >
+                      Change Email
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleResendOTP}
+                      disabled={isLoading}
+                    >
+                      Resend OTP
+                    </Button>
+                  </div>
+                </div>
+              </form>
+            )}
           </CardContent>
         </Card>
       </div>
