@@ -35,6 +35,7 @@ import { TourPackage, Review, TeamMember, WebsiteData } from '@/types';
 
 export default function AdminPage() {
   const { isAuthenticated, sendOTP, verifyOTP, logout, websiteData, updateWebsiteData } = useAdmin();
+  const [mounted, setMounted] = useState(false);
   const [step, setStep] = useState<'email' | 'otp'>('email');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
@@ -44,6 +45,10 @@ export default function AdminPage() {
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [openDialogs, setOpenDialogs] = useState<{ [key: string]: boolean }>({});
   const [otpExpiresAt, setOtpExpiresAt] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Fetch pending reviews
   const fetchPendingReviews = useCallback(async () => {
@@ -158,6 +163,17 @@ export default function AdminPage() {
       setIsLoading(false);
     }
   };
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
