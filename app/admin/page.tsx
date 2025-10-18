@@ -273,7 +273,7 @@ export default function AdminPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
       {/* Notification */}
       {notification && (
-        <div className="fixed top-4 right-4 z-50">
+        <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-auto z-50">
           <Alert className={`${notification.type === 'success' ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-red-500 bg-red-50 dark:bg-red-900/20'}`}>
             {notification.type === 'success' ? (
               <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
@@ -288,38 +288,38 @@ export default function AdminPage() {
       )}
 
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
-          <Button onClick={logout} variant="outline">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
+          <Button onClick={logout} variant="outline" className="w-full sm:w-auto">
             Logout
           </Button>
         </div>
 
-        <Tabs defaultValue="settings" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="settings" className="flex items-center space-x-2">
-              <Settings className="h-4 w-4" />
-              <span>Site Settings</span>
+        <Tabs defaultValue="settings" className="space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 gap-1">
+            <TabsTrigger value="settings" className="flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-3">
+              <Settings className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="text-xs sm:text-sm truncate">Settings</span>
             </TabsTrigger>
-            <TabsTrigger value="about" className="flex items-center space-x-2">
-              <BookOpen className="h-4 w-4" />
-              <span>About</span>
+            <TabsTrigger value="about" className="flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-3">
+              <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="text-xs sm:text-sm truncate">About</span>
             </TabsTrigger>
-            <TabsTrigger value="contact" className="flex items-center space-x-2">
-              <Phone className="h-4 w-4" />
-              <span>Contact</span>
+            <TabsTrigger value="contact" className="flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-3">
+              <Phone className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="text-xs sm:text-sm truncate">Contact</span>
             </TabsTrigger>
-            <TabsTrigger value="packages" className="flex items-center space-x-2">
-              <Package className="h-4 w-4" />
-              <span>Packages</span>
+            <TabsTrigger value="packages" className="flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-3">
+              <Package className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="text-xs sm:text-sm truncate">Packages</span>
             </TabsTrigger>
-            <TabsTrigger value="reviews" className="flex items-center space-x-2">
-              <MessageSquare className="h-4 w-4" />
-              <span>Reviews {pendingReviews.length > 0 && `(${pendingReviews.length})`}</span>
+            <TabsTrigger value="reviews" className="flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-3">
+              <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="text-xs sm:text-sm truncate">Reviews {pendingReviews.length > 0 && `(${pendingReviews.length})`}</span>
             </TabsTrigger>
-            <TabsTrigger value="team" className="flex items-center space-x-2">
-              <Users className="h-4 w-4" />
-              <span>Team</span>
+            <TabsTrigger value="team" className="flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-3">
+              <Users className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="text-xs sm:text-sm truncate">Team</span>
             </TabsTrigger>
           </TabsList>
 

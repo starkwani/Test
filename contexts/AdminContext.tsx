@@ -63,15 +63,30 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   useEffect(() => {
-    setIsLoading(true);
-    // Check authentication status from localStorage
-    const authStatus = localStorage.getItem('admin_authenticated');
-    if (authStatus === 'true') {
-      setIsAuthenticated(true);
-    }
+    const validateSession = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch('/api/auth/validate-session', {
+          credentials: 'include'
+        });
 
-    // Load initial data only once
-    refreshData();
+        if (response.ok) {
+          const data = await response.json();
+          setIsAuthenticated(data.authenticated);
+        } else {
+          setIsAuthenticated(false);
+          localStorage.removeItem('admin_authenticated');
+        }
+      } catch (error) {
+        console.error('Session validation error:', error);
+        setIsAuthenticated(false);
+        localStorage.removeItem('admin_authenticated');
+      }
+
+      await refreshData();
+    };
+
+    validateSession();
   }, [refreshData]);
 
   // Update document title when websiteData changes
@@ -108,12 +123,16 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp }),
+        credentials: 'include'
       });
 
       if (response.ok) {
-        setIsAuthenticated(true);
-        localStorage.setItem('admin_authenticated', 'true');
-        return true;
+        const data = await response.json();
+        if (data.success && data.token) {
+          setIsAuthenticated(true);
+          localStorage.setItem('admin_authenticated', 'true');
+          return true;
+        }
       }
       return false;
     } catch (error) {
@@ -122,9 +141,18 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, []);
 
-  const logout = useCallback(() => {
-    setIsAuthenticated(false);
-    localStorage.removeItem('admin_authenticated');
+  const logout = useCallback(async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setIsAuthenticated(false);
+      localStorage.removeItem('admin_authenticated');
+    }
   }, []);
 
   const updateWebsiteData = useCallback(async (data: WebsiteData) => {
